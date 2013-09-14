@@ -1,41 +1,32 @@
 #include "LPC17xx.h"
 #include "system_LPC17xx.h"
 
-volatile uint32_t msTicks; // counter for 1ms SysTicks
+volatile uint32_t msTicks = 0; // counter for 1ms SysTicks
 
+//====================================================================================
 void main()
 {
-	long i;
+	uint32_t timer_mark;
 	
-	SystemInit();	//Called by startup code
-	
-	msTicks = 0;
-	
-	// Init on-board LED
+	// Init on-board LED as output
 	GPIO1->FIODIR |= 1 << 18;
-	GPIO1->FIOSET = 1 << 18;
 	
 	// Init SysTick
-	SysTick_Config(120000);               /* Generate interrupt every 1 ms */
+	SysTick_Config(SystemFrequency / 1000);				// Generate interrupt every 1 ms
 	
 	for (;;)
 	{
-		while(msTicks < 100);
-		
-		msTicks = 0;
-		
-		if(GPIO1->FIOPIN & (1 << 18))
-		{
-			GPIO1->FIOCLR = 1 << 18;
-		}
-		else
-		{
-			GPIO1->FIOSET = 1 << 18;
-		}
+		timer_mark = msTicks;					// Take timer snapshot 
+		while(msTicks < (timer_mark + 100));	// Wait until 100ms has passed
+		GPIO1->FIOCLR = 1 << 18;				// Turn the LED off
+	
+		timer_mark = msTicks;					// Take timer snapshot 
+		while(msTicks < (timer_mark + 100));	// Wait until 100ms has passed
+		GPIO1->FIOSET = 1 << 18;				// Turn the LED on
 	}
 }
 
-//****************************************************************************
+//====================================================================================
 void SysTick_Handler(void)
 {
 	msTicks++;
